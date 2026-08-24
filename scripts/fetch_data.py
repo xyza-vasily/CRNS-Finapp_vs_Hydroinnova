@@ -11,8 +11,8 @@ import io
 import json
 import os
 import re
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import time
 import requests
 
 # ---------------------------------------------------------------------------
@@ -24,96 +24,87 @@ HYDROINNOVA_URL = (
     "?tz=1:00&vw=soil_moisture4&IM=300534060129810&fn=Marchfeld"
 )
 
-# Finapp runs on Laravel (confirmed via its CSRF meta tag + route naming),
-# which has a standard login flow — see fetch_finapp() below.
 FINAPP_BASE_URL = "https://data.finapptech.com"
 FINAPP_LOGIN_PAGE_URL = f"{FINAPP_BASE_URL}/login"
 FINAPP_DATA_URL = os.environ.get(
     "FINAPP_DATA_URL",
     f"{FINAPP_BASE_URL}/user/installation/info?idInstallation=10617&inst_name=IAEA%20SWMCNL",
 )
-FINAPP_USERNAME = os.environ.get("FINAPP_USERNAME", "")  # your Finapp login email
+FINAPP_USERNAME = os.environ.get("FINAPP_USERNAME", "")
 FINAPP_PASSWORD = os.environ.get("FINAPP_PASSWORD", "")
 
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "..", "docs", "data.json")
 
+# Date filter: only keep data from August 20, 2026 onwards
+START_DATE = datetime(2026, 8, 20, tzinfo=timezone.utc)
+
 
 # ---------------------------------------------------------------------------
-# HYDROINNOVA (confirmed working, no login needed)
+# HYDROINNOVA
 # ---------------------------------------------------------------------------
 
 def fetch_hydroinnova():
-    """Fetch and parse the Hydroinnova CSV-in-HTML feed into a list of records."""
+    """Fetch and parse the Hydroinnova CSV feed."""
     resp = requests.get(HYDROINNOVA_URL, timeout=30)
     resp.raise_for_status()
-    text = resp.text
-
-    # The page is basically raw CSV text (with a "Marchfeld" title glued on the
-    # front). Strip HTML tags if any slipped through, then split into rows.
-    text = re.sub(r"<[^>]+>", "", text)
-
-    # Rows look like: "2026-08-24 08:05:00, 1704, 806, 0.0, 13.9, ..."
-    # Split the header from data by finding the "UTC, N1" marker.
-    if "UTC" in text:
-        text = text[text.index("UTC"):]
-
-    # Rows are concatenated without newlines in the raw fetch, but each row
-    # starts with a date pattern. Insert newlines before each date pattern.
-    text = re.sub(r"(?<!^)(?=\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},)", "\n", text)
-
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
-    header = [h.strip() for h in lines[0].split(",")]
-
+    
+    # Parse as CSV directly
+    csv_data = io.StringIO(resp.text)
+    reader = csv.DictReader(csv_data)
+    
     records = []
-    for line in lines[1:]:
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) < 2:
+    for row in reader:
+        ts_str = row.get("UTC", "").strip()
+        if not ts_str:
             continue
-        row = dict(zip(header, parts))
+            
+        try:
+            # Parse timestamp (format: "2026-08-24 08:05:00")
+            timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        
+        # Only keep records from August 20, 2026 onwards
+        if timestamp < START_DATE:
+            continue
+            
         records.append({
-            "timestamp": row.get("UTC"),
+            "timestamp": timestamp.isoformat(),
             "N1_cph": _to_float(row.get("N1 [cph]")),
             "N2_cph": _to_float(row.get("N2 [cph]")),
             "source": "hydroinnova",
         })
+    
+    print(f"✅ Hydroinnova: {len(records)} records (filtered from {START_DATE.date()})")
     return records
 
 
 # ---------------------------------------------------------------------------
-# FINAPP (placeholder — needs real login details)
+# FINAPP
 # ---------------------------------------------------------------------------
 
 def fetch_finapp():
-    """
-    Log in to Finapp (data.finapptech.com, a Laravel app) and fetch neutron
-    count data for installation 10617 (IAEA SWMCNL).
-
-    Laravel's standard session-login flow:
-      1. GET the login page to obtain a CSRF token + session cookies.
-      2. POST email/password + the CSRF token back to /login, in that session.
-      3. Re-use the now-authenticated session to GET the data endpoint.
-    """
+    """Log in to Finapp and fetch neutron count data."""
     if not (FINAPP_USERNAME and FINAPP_PASSWORD):
-        print("FINAPP_USERNAME / FINAPP_PASSWORD not set — skipping Finapp fetch.")
+        print("⚠️ FINAPP_USERNAME / FINAPP_PASSWORD not set — skipping Finapp fetch.")
         return []
 
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
 
-    # --- Step 1: load the login page and extract the CSRF token -----------
+    # Step 1: Get CSRF token
     login_page = session.get(FINAPP_LOGIN_PAGE_URL, timeout=30)
     login_page.raise_for_status()
 
     csrf_token = _extract_csrf_token(login_page.text)
     if not csrf_token:
         raise RuntimeError(
-            "Could not find a CSRF token on the Finapp login page — "
-            "the login form's field names may differ from what this script expects. "
-            "Inspect the <input name=\"_token\"> field on "
-            f"{FINAPP_LOGIN_PAGE_URL} and adjust fetch_finapp() accordingly."
+            "Could not find CSRF token on Finapp login page. "
+            "Check the login form field names."
         )
 
-    # --- Step 2: submit the login form -------------------------------------
+    # Step 2: Submit login
     login_payload = {
         "_token": csrf_token,
         "email": FINAPP_USERNAME,
@@ -129,12 +120,10 @@ def fetch_finapp():
 
     if "/login" in login_resp.url:
         raise RuntimeError(
-            "Finapp login appears to have failed (still on the login page after "
-            "POSTing credentials). Check FINAPP_USERNAME/FINAPP_PASSWORD, or the "
-            "login form's field names may not be exactly 'email' / 'password'."
+            "Finapp login failed. Check FINAPP_USERNAME/FINAPP_PASSWORD."
         )
 
-    # --- Step 3: fetch the actual data using the authenticated session -----
+    # Step 3: Fetch data
     data_resp = session.get(FINAPP_DATA_URL, timeout=30)
     data_resp.raise_for_status()
 
@@ -142,8 +131,7 @@ def fetch_finapp():
 
 
 def _extract_csrf_token(html):
-    """Pull the CSRF token out of a Laravel page's <meta name="csrf-token"> tag
-    or a hidden <input name="_token"> field, whichever is present."""
+    """Extract CSRF token from Laravel page."""
     meta_match = re.search(r'<meta name="csrf-token" content="([^"]+)"', html)
     if meta_match:
         return meta_match.group(1)
@@ -154,36 +142,63 @@ def _extract_csrf_token(html):
 
 
 def _parse_finapp_response(resp):
-    """
-    Parse the /user/installation/info response into a list of records.
-
-    This endpoint's exact shape (JSON vs HTML table) isn't confirmed yet —
-    this handles the JSON case (most likely, given the route naming) and
-    falls back to raising a clear error with a snippet of the real response
-    so we can adjust parsing once we see it.
-    """
+    """Parse Finapp response with date filtering."""
     content_type = resp.headers.get("Content-Type", "")
 
     if "application/json" in content_type:
         payload = resp.json()
-        # Try a couple of plausible shapes; adjust once the real shape is known.
-        rows = payload if isinstance(payload, list) else payload.get("data", [])
+        
+        # Handle different response structures
+        if isinstance(payload, list):
+            rows = payload
+        elif isinstance(payload, dict):
+            rows = payload.get("data") or payload.get("result") or payload.get("records") or []
+            if not rows and "installation" in payload:
+                rows = payload.get("installation", {}).get("data", [])
+        else:
+            rows = []
+
         records = []
         for row in rows:
+            if not row:
+                continue
+            
+            # Get timestamp from various possible fields
+            ts_str = row.get("timestamp") or row.get("date") or row.get("created_at") or row.get("time")
+            if not ts_str:
+                continue
+                
+            try:
+                timestamp = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                if timestamp.tzinfo is None:
+                    timestamp = timestamp.replace(tzinfo=timezone.utc)
+            except (ValueError, AttributeError):
+                # Try alternative format
+                try:
+                    timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                    timestamp = timestamp.replace(tzinfo=timezone.utc)
+                except ValueError:
+                    continue
+            
+            # Only keep records from August 20, 2026 onwards
+            if timestamp < START_DATE:
+                continue
+            
             records.append({
-                "timestamp": row.get("timestamp") or row.get("date") or row.get("created_at"),
-                "N1_cph": _to_float(
-                    row.get("N1") or row.get("neutron_count") or row.get("counts")
-                ),
+                "timestamp": timestamp.isoformat(),
+                "N1_cph": _to_float(row.get("N1") or row.get("neutron_count") or row.get("counts")),
+                "N2_cph": _to_float(row.get("N2") or row.get("neutron_count_2")),
                 "source": "finapp",
             })
+        
+        print(f"✅ Finapp: {len(records)} records (filtered from {START_DATE.date()})")
         return records
 
-    # Not JSON — dump a snippet so we can see the real structure and fix parsing.
+    # Not JSON - show snippet for debugging
     snippet = resp.text[:1500]
     raise RuntimeError(
-        "Finapp data endpoint didn't return JSON as expected. "
-        f"Content-Type was '{content_type}'. First 1500 chars of response:\n{snippet}"
+        f"Finapp returned non-JSON. Content-Type: {content_type}\n"
+        f"First 1500 chars: {snippet}"
     )
 
 
@@ -193,17 +208,23 @@ def _parse_finapp_response(resp):
 
 def _to_float(val):
     try:
+        if isinstance(val, str):
+            val = val.replace(",", ".")
         return float(val)
     except (TypeError, ValueError):
         return None
 
 
 def main():
+    """Main execution."""
+    print("🚀 Fetching neutron data...")
+    
     hydro = fetch_hydroinnova()
     fin = fetch_finapp()
 
     output = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
+        "start_date": START_DATE.isoformat(),
         "hydroinnova": hydro,
         "finapp": fin,
     }
@@ -212,7 +233,9 @@ def main():
     with open(OUTPUT_PATH, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"Wrote {len(hydro)} Hydroinnova records and {len(fin)} Finapp records to {OUTPUT_PATH}")
+    print(f"📊 Wrote data to {OUTPUT_PATH}")
+    print(f"   - Hydroinnova: {len(hydro)} records")
+    print(f"   - Finapp: {len(fin)} records")
 
 
 if __name__ == "__main__":
