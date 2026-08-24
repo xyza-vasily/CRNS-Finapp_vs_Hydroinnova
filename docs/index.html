@@ -55,9 +55,12 @@
         /* --- CHART WRAPPER --- */
         .chart-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 24px;
             margin-top: 10px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .chart-card {
             background: #ffffff;
@@ -81,7 +84,7 @@
         .chart-card canvas {
             width: 100% !important;
             height: auto !important;
-            max-height: 300px;
+            max-height: 350px;
         }
 
         /* --- DATA TABLE --- */
@@ -92,6 +95,9 @@
             border-radius: 12px;
             padding: 16px 20px;
             overflow-x: auto;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .table-wrapper h3 {
             font-family: Arial, Helvetica, sans-serif;
@@ -131,9 +137,6 @@
 
         /* --- RESPONSIVE --- */
         @media (max-width: 800px) {
-            .chart-grid {
-                grid-template-columns: 1fr;
-            }
             h1 {
                 font-size: 1.5rem;
             }
@@ -157,7 +160,7 @@
 </head>
 <body>
 
-    <h1>🌾 Marchfeld CRNS Comparison</h1>
+    <h1>Marchfeld CRNS Comparison</h1>
     <div class="subtitle">Hydroinnova vs Finapp &mdash; Neutron Counts from August 20, 2026</div>
 
     <div class="timestamp-wrapper">
@@ -166,17 +169,13 @@
 
     <div class="chart-grid">
         <div class="chart-card">
-            <h3>📊 N1 (fast neutrons)</h3>
+            <h3>N1 (fast neutrons)</h3>
             <canvas id="chartN1"></canvas>
-        </div>
-        <div class="chart-card">
-            <h3>📊 N2 (thermal neutrons)</h3>
-            <canvas id="chartN2"></canvas>
         </div>
     </div>
 
     <div class="table-wrapper">
-        <h3>📋 Latest readings</h3>
+        <h3>Latest readings</h3>
         <div id="tableContainer">
             <p style="color:#57606a;">Loading data…</p>
         </div>
@@ -193,7 +192,7 @@
                 // Update timestamp badge
                 const updated = new Date(data.updated_at);
                 document.getElementById('updateBadge').textContent =
-                    `🔄 Last updated: ${updated.toLocaleString()}`;
+                    `Last updated: ${updated.toLocaleString()}`;
 
                 // Combine both sources into a single time-series
                 const allRecords = [...data.hydroinnova, ...data.finapp];
@@ -214,18 +213,14 @@
                         timeMap.set(key, {
                             timestamp: r.timestamp,
                             hydro_N1: null,
-                            hydro_N2: null,
                             finapp_N1: null,
-                            finapp_N2: null,
                         });
                     }
                     const entry = timeMap.get(key);
                     if (r.source === 'hydroinnova') {
                         entry.hydro_N1 = r.N1_cph;
-                        entry.hydro_N2 = r.N2_cph;
                     } else if (r.source === 'finapp') {
                         entry.finapp_N1 = r.N1_cph;
-                        entry.finapp_N2 = r.N2_cph;
                     }
                 });
 
@@ -295,67 +290,7 @@
                     }
                 });
 
-                // --- Chart 2: N2 ---
-                const ctx2 = document.getElementById('chartN2').getContext('2d');
-                new Chart(ctx2, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Hydroinnova N2',
-                                data: merged.map(d => d.hydro_N2),
-                                borderColor: '#00b894',
-                                backgroundColor: 'rgba(0, 184, 148, 0.08)',
-                                pointRadius: 0,
-                                borderWidth: 2.5,
-                                tension: 0.3,
-                                fill: true,
-                            },
-                            {
-                                label: 'Finapp N2',
-                                data: merged.map(d => d.finapp_N2),
-                                borderColor: '#6c5ce7',
-                                backgroundColor: 'rgba(108, 92, 231, 0.08)',
-                                pointRadius: 0,
-                                borderWidth: 2.5,
-                                tension: 0.3,
-                                fill: true,
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                labels: {
-                                    font: { family: 'Arial', size: 11 },
-                                    boxWidth: 14,
-                                    padding: 12,
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                ticks: {
-                                    font: { family: 'Arial', size: 9 },
-                                    maxTicksLimit: 20,
-                                },
-                                grid: { display: false },
-                            },
-                            y: {
-                                ticks: {
-                                    font: { family: 'Arial', size: 10 },
-                                },
-                                grid: { color: 'rgba(0,0,0,0.05)' },
-                                beginAtZero: true,
-                            }
-                        }
-                    }
-                });
-
-                // --- Table: show latest 10 records ---
+                // --- Table: show latest 10 records (only N1) ---
                 const latest = merged.slice(-10).reverse();
                 let html = `
                     <table>
@@ -363,9 +298,7 @@
                             <tr>
                                 <th>Timestamp</th>
                                 <th>Hydroinnova N1</th>
-                                <th>Hydroinnova N2</th>
                                 <th>Finapp N1</th>
-                                <th>Finapp N2</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -377,9 +310,7 @@
                         <tr>
                             <td>${ts}</td>
                             <td>${d.hydro_N1 !== null ? d.hydro_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
-                            <td>${d.hydro_N2 !== null ? d.hydro_N2.toFixed(1) : '<span class="null-value">—</span>'}</td>
                             <td>${d.finapp_N1 !== null ? d.finapp_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
-                            <td>${d.finapp_N2 !== null ? d.finapp_N2.toFixed(1) : '<span class="null-value">—</span>'}</td>
                         </tr>
                     `;
                 });
@@ -387,7 +318,7 @@
                 document.getElementById('tableContainer').innerHTML = html;
 
             } catch (err) {
-                document.getElementById('updateBadge').textContent = '⚠️ Error loading data';
+                document.getElementById('updateBadge').textContent = 'Error loading data';
                 document.getElementById('tableContainer').innerHTML =
                     `<p style="color:#c0392b;">Error: ${err.message}. Make sure data.json exists.</p>`;
                 console.error('Dashboard error:', err);
