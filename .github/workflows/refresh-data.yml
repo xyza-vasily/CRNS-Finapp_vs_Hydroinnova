@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # 👇 ADD THIS LINE HERE - inside the checkout step
+        
           token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Python
