@@ -1,28 +1,6 @@
 {
-  "updated_at": "2026-08-24T08:05:00+00:00",
-  "note": "Sample data seeded from the Marchfeld feed for initial testing. Run the 'Refresh neutron data' GitHub Actions workflow to replace this with a live pull.",
-  "hydroinnova": [
-    {"timestamp": "2026-08-24 08:05:00", "N1_cph": 1704, "N2_cph": 806, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 07:05:00", "N1_cph": 1697, "N2_cph": 789, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 06:06:00", "N1_cph": 1608, "N2_cph": 779, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 05:05:00", "N1_cph": 1645, "N2_cph": 795, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 04:05:00", "N1_cph": 1675, "N2_cph": 783, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 01:05:00", "N1_cph": 1664, "N2_cph": 784, "source": "hydroinnova"},
-    {"timestamp": "2026-08-24 00:09:00", "N1_cph": 1739, "N2_cph": 758, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 23:05:00", "N1_cph": 1667, "N2_cph": 773, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 22:05:00", "N1_cph": 1681, "N2_cph": 830, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 21:05:00", "N1_cph": 1732, "N2_cph": 776, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 20:05:00", "N1_cph": 1682, "N2_cph": 772, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 19:05:00", "N1_cph": 1607, "N2_cph": 825, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 18:06:00", "N1_cph": 1657, "N2_cph": 838, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 17:05:00", "N1_cph": 1657, "N2_cph": 734, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 16:05:00", "N1_cph": 1784, "N2_cph": 821, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 15:10:00", "N1_cph": 1663, "N2_cph": 814, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 14:06:00", "N1_cph": 1750, "N2_cph": 814, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 13:05:00", "N1_cph": 1684, "N2_cph": 790, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 12:05:00", "N1_cph": 1651, "N2_cph": 775, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 11:05:00", "N1_cph": 1660, "N2_cph": 796, "source": "hydroinnova"},
-    {"timestamp": "2026-08-23 10:05:00", "N1_cph": 1678, "N2_cph": 820, "source": "hydroinnova"}
-  ],
+  "updated_at": "2026-08-24T12:44:35.830767+00:00",
+  "start_date": "2026-08-20T00:00:00+00:00",
+  "hydroinnova": [],
   "finapp": []
 }
