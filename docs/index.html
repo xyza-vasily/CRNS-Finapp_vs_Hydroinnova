@@ -1,294 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marchfeld CRNS — Neutron Count Comparison</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg: #0e1512;
-    --panel: #141d19;
-    --line: #24332c;
-    --text: #d8e4de;
-    --muted: #7d9188;
-    --hydro: #5ecbb0;   /* teal — Hydroinnova */
-    --fin: #e0a458;     /* amber — Finapp */
-    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
-    --sans: 'IBM Plex Sans', -apple-system, sans-serif;
-  }
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marchfeld CRNS Dashboard</title>
+    <style>
+        /* --- RESET & BASE --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f6f8fa;
+            color: #24292f;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-  }
+        /* --- TITLE (centered, no glow) --- */
+        h1 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 700;
+            font-size: 2rem;
+            text-align: center;
+            color: #1a1a2e;
+            margin: 20px 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #57606a;
+            margin-bottom: 30px;
+        }
 
-  header {
-    padding: 28px 32px 20px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .title-block .eyebrow {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0 0 6px;
-  }
-  h1 {
-    margin: 0;
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-  .station {
-    font-family: var(--mono);
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 4px;
-  }
+        /* --- TIMESTAMP BADGE --- */
+        .timestamp-badge {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #57606a;
+            background: #eaeef2;
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 20px;
+            margin: 0 auto 25px auto;
+        }
+        .timestamp-wrapper {
+            text-align: center;
+        }
 
-  .status {
-    text-align: right;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .status .dot {
-    display: inline-block;
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--hydro);
-    margin-right: 6px;
-    box-shadow: 0 0 6px var(--hydro);
-  }
+        /* --- CHART WRAPPER --- */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 10px;
+        }
+        .chart-card {
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 12px;
+            padding: 18px 18px 10px 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: box-shadow 0.15s ease;
+        }
+        .chart-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .chart-card h3 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+        .chart-card canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 300px;
+        }
 
-  main {
-    padding: 28px 32px 60px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+        /* --- DATA TABLE --- */
+        .table-wrapper {
+            margin-top: 32px;
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 12px;
+            padding: 16px 20px;
+            overflow-x: auto;
+        }
+        .table-wrapper h3 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2c3e50;
+            margin-bottom: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        thead {
+            background: #f0f2f5;
+        }
+        th {
+            font-weight: 600;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 2px solid #d0d7de;
+            color: #1a1a2e;
+        }
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eaeef2;
+            color: #24292f;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .null-value {
+            color: #8b949e;
+            font-style: italic;
+        }
 
-  .legend-row {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-  .swatch { width: 20px; height: 3px; border-radius: 2px; }
-  .swatch.hydro { background: var(--hydro); }
-  .swatch.fin { background: var(--fin); }
-
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 20px;
-  }
-
-  .chart-wrap { height: 440px; position: relative; }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
-  .stat {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 16px 18px;
-  }
-  .stat .label {
-    font-family: var(--mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .stat .value {
-    font-family: var(--mono);
-    font-size: 22px;
-    font-weight: 600;
-  }
-  .stat .value.hydro { color: var(--hydro); }
-  .stat .value.fin { color: var(--fin); }
-
-  .empty-note {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--muted);
-    background: var(--panel);
-    border: 1px dashed var(--line);
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-top: 16px;
-  }
-
-  footer {
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    padding: 24px 0 40px;
-  }
-</style>
+        /* --- RESPONSIVE --- */
+        @media (max-width: 800px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+        @media (max-width: 500px) {
+            body {
+                padding: 12px;
+            }
+            .chart-card {
+                padding: 12px;
+            }
+            .table-wrapper {
+                padding: 12px;
+            }
+            th, td {
+                padding: 6px 8px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<header>
-  <div class="title-block">
-    <p class="eyebrow">Cosmic Ray Neutron Sensing</p>
-    <h1>Neutron Count Comparison</h1>
-    <div class="station">Marchfeld station — Finapp vs. Hydroinnova</div>
-  </div>
-  <div class="status">
-    <div><span class="dot"></span><span id="updated-at">Loading…</span></div>
-    <div style="margin-top:4px;">Data refreshed via GitHub Actions</div>
-  </div>
-</header>
+    <h1>🌾 Marchfeld CRNS Comparison</h1>
+    <div class="subtitle">Hydroinnova vs Finapp &mdash; Neutron Counts from August 20, 2026</div>
 
-<main>
-  <div class="legend-row">
-    <div class="legend-item"><span class="swatch hydro"></span>Hydroinnova · N1 [cph]</div>
-    <div class="legend-item"><span class="swatch fin"></span>Finapp · N1 [cph]</div>
-  </div>
-
-  <div class="panel">
-    <div class="chart-wrap">
-      <canvas id="neutronChart"></canvas>
+    <div class="timestamp-wrapper">
+        <span class="timestamp-badge" id="updateBadge">⏳ Loading data…</span>
     </div>
-  </div>
 
-  <div class="stats" id="stats"></div>
-  <div class="empty-note" id="finapp-note" style="display:none;">
-    No Finapp data yet — once Finapp credentials are added as GitHub secrets and the
-    "Refresh neutron data" workflow is run, its series will appear here alongside Hydroinnova.
-  </div>
-</main>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>📊 N1 (fast neutrons)</h3>
+            <canvas id="chartN1"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>📊 N2 (thermal neutrons)</h3>
+            <canvas id="chartN2"></canvas>
+        </div>
+    </div>
 
-<footer>Marchfeld CRNS dashboard · click "Run workflow" under the Actions tab to pull fresh data</footer>
+    <div class="table-wrapper">
+        <h3>📋 Latest readings</h3>
+        <div id="tableContainer">
+            <p style="color:#57606a;">Loading data…</p>
+        </div>
+    </div>
 
-<script>
-async function loadData() {
-  const res = await fetch('data.json', { cache: 'no-store' });
-  return res.json();
-}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        (async function () {
+            try {
+                const res = await fetch('data.json');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
 
-function fmtTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+                // Update timestamp badge
+                const updated = new Date(data.updated_at);
+                document.getElementById('updateBadge').textContent =
+                    `🔄 Last updated: ${updated.toLocaleString()}`;
 
-function mean(arr) {
-  const vals = arr.filter(v => v !== null && v !== undefined);
-  if (!vals.length) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
+                // Combine both sources into a single time-series
+                const allRecords = [...data.hydroinnova, ...data.finapp];
+                if (!allRecords.length) {
+                    document.getElementById('tableContainer').innerHTML =
+                        '<p style="color:#8b949e;">No data available yet. Run the workflow to fetch data.</p>';
+                    return;
+                }
 
-(async () => {
-  const data = await loadData();
+                // Sort by timestamp
+                allRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  document.getElementById('updated-at').textContent =
-    'Last updated ' + (data.updated_at ? fmtTime(data.updated_at) : 'unknown');
+                // Build lookup for merging
+                const timeMap = new Map();
+                allRecords.forEach(r => {
+                    const key = r.timestamp;
+                    if (!timeMap.has(key)) {
+                        timeMap.set(key, {
+                            timestamp: r.timestamp,
+                            hydro_N1: null,
+                            hydro_N2: null,
+                            finapp_N1: null,
+                            finapp_N2: null,
+                        });
+                    }
+                    const entry = timeMap.get(key);
+                    if (r.source === 'hydroinnova') {
+                        entry.hydro_N1 = r.N1_cph;
+                        entry.hydro_N2 = r.N2_cph;
+                    } else if (r.source === 'finapp') {
+                        entry.finapp_N1 = r.N1_cph;
+                        entry.finapp_N2 = r.N2_cph;
+                    }
+                });
 
-  const hydro = (data.hydroinnova || []).slice().reverse(); // oldest -> newest
-  const fin = (data.finapp || []).slice().reverse();
+                const merged = Array.from(timeMap.values());
+                const labels = merged.map(d => {
+                    const dt = new Date(d.timestamp);
+                    return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                });
 
-  if (!fin.length) {
-    document.getElementById('finapp-note').style.display = 'block';
-  }
+                // --- Chart 1: N1 ---
+                const ctx1 = document.getElementById('chartN1').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Hydroinnova N1',
+                                data: merged.map(d => d.hydro_N1),
+                                borderColor: '#2e86de',
+                                backgroundColor: 'rgba(46, 134, 222, 0.08)',
+                                pointRadius: 0,
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Finapp N1',
+                                data: merged.map(d => d.finapp_N1),
+                                borderColor: '#e17055',
+                                backgroundColor: 'rgba(225, 112, 85, 0.08)',
+                                pointRadius: 0,
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                fill: true,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    font: { family: 'Arial', size: 11 },
+                                    boxWidth: 14,
+                                    padding: 12,
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    font: { family: 'Arial', size: 9 },
+                                    maxTicksLimit: 20,
+                                },
+                                grid: { display: false },
+                            },
+                            y: {
+                                ticks: {
+                                    font: { family: 'Arial', size: 10 },
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' },
+                                beginAtZero: true,
+                            }
+                        }
+                    }
+                });
 
-  const ctx = document.getElementById('neutronChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: hydro.map(r => fmtTime(r.timestamp)),
-      datasets: [
-        {
-          label: 'Hydroinnova N1 [cph]',
-          data: hydro.map(r => r.N1_cph),
-          borderColor: '#5ecbb0',
-          backgroundColor: 'rgba(94,203,176,0.08)',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.25,
-          fill: true,
-        },
-        {
-          label: 'Finapp N1 [cph]',
-          data: fin.map(r => r.N1_cph),
-          borderColor: '#e0a458',
-          backgroundColor: 'rgba(224,164,88,0.08)',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.25,
-          fill: true,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      scales: {
-        x: {
-          ticks: { color: '#7d9188', maxTicksLimit: 10, font: { family: 'IBM Plex Mono', size: 11 } },
-          grid: { color: '#24332c' },
-        },
-        y: {
-          ticks: { color: '#7d9188', font: { family: 'IBM Plex Mono', size: 11 } },
-          grid: { color: '#24332c' },
-          title: { display: true, text: 'Neutron count [cph]', color: '#7d9188' },
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#141d19',
-          borderColor: '#24332c',
-          borderWidth: 1,
-          titleFont: { family: 'IBM Plex Mono' },
-          bodyFont: { family: 'IBM Plex Mono' },
-        }
-      }
-    }
-  });
+                // --- Chart 2: N2 ---
+                const ctx2 = document.getElementById('chartN2').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Hydroinnova N2',
+                                data: merged.map(d => d.hydro_N2),
+                                borderColor: '#00b894',
+                                backgroundColor: 'rgba(0, 184, 148, 0.08)',
+                                pointRadius: 0,
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Finapp N2',
+                                data: merged.map(d => d.finapp_N2),
+                                borderColor: '#6c5ce7',
+                                backgroundColor: 'rgba(108, 92, 231, 0.08)',
+                                pointRadius: 0,
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                fill: true,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    font: { family: 'Arial', size: 11 },
+                                    boxWidth: 14,
+                                    padding: 12,
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    font: { family: 'Arial', size: 9 },
+                                    maxTicksLimit: 20,
+                                },
+                                grid: { display: false },
+                            },
+                            y: {
+                                ticks: {
+                                    font: { family: 'Arial', size: 10 },
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' },
+                                beginAtZero: true,
+                            }
+                        }
+                    }
+                });
 
-  const hydroMean = mean(hydro.map(r => r.N1_cph));
-  const finMean = mean(fin.map(r => r.N1_cph));
-  const statsEl = document.getElementById('stats');
-  statsEl.innerHTML = `
-    <div class="stat"><div class="label">Hydroinnova · latest N1</div>
-      <div class="value hydro">${hydro.length ? hydro[hydro.length-1].N1_cph : '—'} cph</div></div>
-    <div class="stat"><div class="label">Hydroinnova · avg N1 (window)</div>
-      <div class="value hydro">${hydroMean ? hydroMean.toFixed(0) : '—'} cph</div></div>
-    <div class="stat"><div class="label">Finapp · latest N1</div>
-      <div class="value fin">${fin.length ? fin[fin.length-1].N1_cph : '—'} cph</div></div>
-    <div class="stat"><div class="label">Finapp · avg N1 (window)</div>
-      <div class="value fin">${finMean ? finMean.toFixed(0) : '—'} cph</div></div>
-  `;
-})();
-</script>
+                // --- Table: show latest 10 records ---
+                const latest = merged.slice(-10).reverse();
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Hydroinnova N1</th>
+                                <th>Hydroinnova N2</th>
+                                <th>Finapp N1</th>
+                                <th>Finapp N2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                latest.forEach(d => {
+                    const dt = new Date(d.timestamp);
+                    const ts = dt.toLocaleString();
+                    html += `
+                        <tr>
+                            <td>${ts}</td>
+                            <td>${d.hydro_N1 !== null ? d.hydro_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
+                            <td>${d.hydro_N2 !== null ? d.hydro_N2.toFixed(1) : '<span class="null-value">—</span>'}</td>
+                            <td>${d.finapp_N1 !== null ? d.finapp_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
+                            <td>${d.finapp_N2 !== null ? d.finapp_N2.toFixed(1) : '<span class="null-value">—</span>'}</td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('tableContainer').innerHTML = html;
+
+            } catch (err) {
+                document.getElementById('updateBadge').textContent = '⚠️ Error loading data';
+                document.getElementById('tableContainer').innerHTML =
+                    `<p style="color:#c0392b;">Error: ${err.message}. Make sure data.json exists.</p>`;
+                console.error('Dashboard error:', err);
+            }
+        })();
+    </script>
 
 </body>
 </html>
