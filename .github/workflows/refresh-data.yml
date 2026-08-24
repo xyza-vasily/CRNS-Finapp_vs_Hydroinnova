@@ -1,5 +1,9 @@
 name: Refresh neutron data
 
+# 👇 ADD THIS SECTION HERE - at the top level, before "jobs:"
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -12,11 +16,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # 👇 ADD THIS LINE HERE - inside the checkout step
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # Use 3.11 instead of 3.12 for better compatibility
+          python-version: '3.11'
           
       - name: Install dependencies
         run: |
@@ -28,7 +35,6 @@ jobs:
           FINAPP_USERNAME: ${{ secrets.FINAPP_USERNAME }}
           FINAPP_PASSWORD: ${{ secrets.FINAPP_PASSWORD }}
           PYTHONUNBUFFERED: 1
-        continue-on-error: true  # Don't fail the workflow if Python script has issues
         run: |
           python scripts/fetch_data.py
           
