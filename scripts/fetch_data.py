@@ -16,10 +16,13 @@ import requests
 # CONFIG
 # ---------------------------------------------------------------------------
 
-HYDROINNOVA_URL = (
-    "http://nearfld.com/reguser/queryData.php"
-    "?tz=1:00&vw=soil_moisture4&IM=300534060129810&fn=Marchfeld"
-)
+# Try multiple Hydroinnova URLs to find neutron data
+HYDROINNOVA_URLS = [
+    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=neutron1&IM=300534060129810&fn=Marchfeld",
+    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=neutron&IM=300534060129810&fn=Marchfeld",
+    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=raw&IM=300534060129810&fn=Marchfeld",
+    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=soil_moisture&IM=300534060129810&fn=Marchfeld",
+]
 
 FINAPP_BASE_URL = "https://data.finapptech.com"
 FINAPP_LOGIN_PAGE_URL = f"{FINAPP_BASE_URL}/login"
@@ -37,54 +40,66 @@ START_DATE = datetime(2026, 8, 20, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
-# HYDROINNOVA
+# HYDROINNOVA - Try multiple URLs
 # ---------------------------------------------------------------------------
 
 def fetch_hydroinnova():
-    """Fetch and parse the Hydroinnova CSV feed."""
+    """Try multiple URLs to find neutron data from Hydroinnova."""
     print("📡 Fetching Hydroinnova data...")
-    try:
-        resp = requests.get(HYDROINNOVA_URL, timeout=30)
-        resp.raise_for_status()
-        print(f"   ✅ Hydroinnova response: {resp.status_code}")
-    except Exception as e:
-        print(f"   ❌ Hydroinnova request failed: {e}")
-        return []
+    
+    for i, url in enumerate(HYDROINNOVA_URLS, 1):
+        print(f"   Trying URL {i}/{len(HYDROINNOVA_URLS)}: {url}")
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            
+            records = _parse_hydroinnova_response(resp.text)
+            if records:
+                print(f"   ✅ Found {len(records)} neutron records from URL {i}")
+                return records
+            else:
+                print(f"   ⚠️ No records found, trying next URL...")
+                
+        except Exception as e:
+            print(f"   ❌ Error: {e}")
+            continue
+    
+    print("   ❌ No neutron data found in any URL")
+    return []
 
-    # The response might have HTML tags or extra text
-    text = resp.text
+
+def _parse_hydroinnova_response(text):
+    """Parse Hydroinnova response and extract neutron data."""
+    # Check if it's CSV data
+    if "UTC" not in text:
+        return []
     
-    # Try to find the CSV part
-    if "UTC" in text:
-        # Extract from the first "UTC" to the end
-        text = text[text.index("UTC"):]
-    
-    # Clean up - remove any HTML tags
+    # Extract CSV part
+    text = text[text.index("UTC"):]
     text = re.sub(r'<[^>]+>', '', text)
     
-    # Split into lines
     lines = [l.strip() for l in text.split('\n') if l.strip()]
-    
-    if not lines:
-        print("   ❌ No data found in Hydroinnova response")
+    if len(lines) < 2:
         return []
     
-    # First line should be header
+    # Parse header
     header = [h.strip() for h in lines[0].split(',')]
-    print(f"   Header: {header}")
+    
+    # Check if we have neutron columns
+    has_n1 = any('N1' in h for h in header)
+    has_n2 = any('N2' in h for h in header)
+    
+    if not has_n1:
+        print(f"   ⚠️ No N1 column found. Header: {header}")
+        return []
     
     records = []
     for line in lines[1:]:
-        # Handle rows that might have leading/trailing spaces
         parts = [p.strip() for p in line.split(',')]
         if len(parts) < len(header):
             continue
         
-        # Build dict with header mapping
-        row = {}
-        for i, key in enumerate(header):
-            if i < len(parts):
-                row[key] = parts[i]
+        row = dict(zip(header, parts))
         
         # Get timestamp
         ts_str = row.get("UTC", "").strip()
@@ -92,43 +107,39 @@ def fetch_hydroinnova():
             continue
         
         try:
-            # Try different timestamp formats
-            timestamp = None
-            for fmt in ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S"]:
-                try:
-                    timestamp = datetime.strptime(ts_str, fmt)
-                    timestamp = timestamp.replace(tzinfo=timezone.utc)
-                    break
-                except ValueError:
-                    continue
-            
-            if timestamp is None:
-                continue
-                
-        except Exception:
+            timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        except ValueError:
             continue
         
-        # Date filter
+        # Filter by date
         if timestamp < START_DATE:
             continue
         
         # Get N1 and N2 values
-        n1 = row.get("N1 [cph]") or row.get("N1") or row.get("n1")
-        n2 = row.get("N2 [cph]") or row.get("N2") or row.get("n2")
+        n1 = None
+        n2 = None
         
-        records.append({
-            "timestamp": timestamp.isoformat(),
-            "N1_cph": _to_float(n1),
-            "N2_cph": _to_float(n2),
-            "source": "hydroinnova",
-        })
+        for key, val in row.items():
+            if 'N1' in key and val:
+                n1 = _to_float(val)
+            elif 'N2' in key and val:
+                n2 = _to_float(val)
+        
+        # Only add if we have at least N1
+        if n1 is not None:
+            records.append({
+                "timestamp": timestamp.isoformat(),
+                "N1_cph": n1,
+                "N2_cph": n2,
+                "source": "hydroinnova",
+            })
     
-    print(f"   ✅ Hydroinnova: {len(records)} records from {START_DATE.date()}")
     return records
 
 
 # ---------------------------------------------------------------------------
-# FINAPP
+# FINAPP (simplified for now)
 # ---------------------------------------------------------------------------
 
 def fetch_finapp():
@@ -156,13 +167,12 @@ def fetch_finapp():
         print("   Step 1: Getting login page...")
         login_page = session.get(FINAPP_LOGIN_PAGE_URL, timeout=30)
         login_page.raise_for_status()
-        print(f"   ✅ Login page loaded (status: {login_page.status_code})")
+        print(f"   ✅ Login page loaded")
 
-        # Extract CSRF token from page
+        # Extract CSRF token
         csrf_token = _extract_csrf_token(login_page.text)
         if not csrf_token:
             print("   ❌ Could not extract CSRF token")
-            print(f"   Page snippet: {login_page.text[:500]}")
             return []
         
         print(f"   ✅ CSRF token: {csrf_token[:20]}...")
@@ -174,14 +184,6 @@ def fetch_finapp():
             "email": FINAPP_USERNAME,
             "password": FINAPP_PASSWORD,
         }
-        
-        # Try with different form field names
-        if 'name="email"' not in login_page.text:
-            # Maybe they use different field names
-            if 'name="username"' in login_page.text:
-                login_data["username"] = login_data.pop("email")
-            elif 'name="login"' in login_page.text:
-                login_data["login"] = login_data.pop("email")
         
         login_resp = session.post(
             FINAPP_LOGIN_PAGE_URL,
@@ -200,7 +202,6 @@ def fetch_finapp():
         # Check if login succeeded
         if "/login" in login_resp.url:
             print("   ❌ Login failed - still on login page")
-            print(f"   Response contains: {login_resp.text[:200]}")
             return []
 
         # Step 3: Fetch data
@@ -211,60 +212,38 @@ def fetch_finapp():
             timeout=30
         )
         data_resp.raise_for_status()
-        print(f"   ✅ Data fetched (status: {data_resp.status_code})")
-        print(f"   Content-Type: {data_resp.headers.get('Content-Type', 'unknown')}")
+        print(f"   ✅ Data fetched")
 
         return _parse_finapp_response(data_resp)
 
     except requests.exceptions.RequestException as e:
         print(f"   ❌ Request error: {e}")
-        if hasattr(e, 'response') and e.response:
-            print(f"   Response: {e.response.text[:200]}")
         return []
     except Exception as e:
         print(f"   ❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
         return []
 
 
 def _extract_csrf_token(html):
     """Extract CSRF token from Laravel page."""
-    # Try meta tag first
     meta_match = re.search(r'<meta name="csrf-token" content="([^"]+)"', html, re.IGNORECASE)
     if meta_match:
         return meta_match.group(1)
     
-    # Try input field
     input_match = re.search(r'<input[^>]*name="_token"[^>]*value="([^"]+)"', html, re.IGNORECASE)
     if input_match:
         return input_match.group(1)
-    
-    # Try JavaScript variable
-    js_match = re.search(r'csrfToken\s*=\s*["\']([^"\']+)["\']', html, re.IGNORECASE)
-    if js_match:
-        return js_match.group(1)
-    
-    # Try any _token pattern
-    token_match = re.search(r'_token["\']?\s*[:=]\s*["\']([^"\']+)["\']', html, re.IGNORECASE)
-    if token_match:
-        return token_match.group(1)
     
     return None
 
 
 def _parse_finapp_response(resp):
     """Parse Finapp response with date filtering."""
-    content_type = resp.headers.get("Content-Type", "")
-    print(f"   Parsing Finapp response...")
-
-    # Try to parse JSON
     try:
         payload = resp.json()
         print(f"   ✅ JSON parsed successfully")
     except json.JSONDecodeError:
-        print(f"   ❌ Not JSON, Content-Type: {content_type}")
-        print(f"   Response snippet: {resp.text[:300]}")
+        print(f"   ❌ Not JSON")
         return []
 
     # Handle different response structures
@@ -272,30 +251,24 @@ def _parse_finapp_response(resp):
     if isinstance(payload, list):
         rows = payload
     elif isinstance(payload, dict):
-        # Try common Laravel patterns
-        for key in ["data", "result", "records", "items", "installation"]:
+        for key in ["data", "result", "records", "items"]:
             if key in payload and payload[key]:
                 if isinstance(payload[key], list):
                     rows = payload[key]
                     break
-                elif isinstance(payload[key], dict) and "data" in payload[key]:
-                    rows = payload[key]["data"]
-                    break
     
-    # If still empty, check if payload itself is the record
-    if not rows and any(k in payload for k in ["timestamp", "date", "created_at", "N1", "neutron_count"]):
-        rows = [payload]
-    
-    print(f"   Found {len(rows)} rows to process")
+    if not rows:
+        print(f"   ⚠️ No data found in response")
+        return []
 
     records = []
     for row in rows:
-        if not row or not isinstance(row, dict):
+        if not row:
             continue
         
         # Extract timestamp
         ts_str = None
-        for key in ["timestamp", "date", "created_at", "updated_at", "time", "datetime"]:
+        for key in ["timestamp", "date", "created_at", "time"]:
             if key in row and row[key]:
                 ts_str = row[key]
                 break
@@ -303,10 +276,8 @@ def _parse_finapp_response(resp):
         if not ts_str:
             continue
         
-        # Parse timestamp
         try:
             if isinstance(ts_str, (int, float)):
-                # Unix timestamp
                 timestamp = datetime.fromtimestamp(ts_str, tz=timezone.utc)
             else:
                 ts_str = str(ts_str).replace('Z', '+00:00')
@@ -320,7 +291,6 @@ def _parse_finapp_response(resp):
             except ValueError:
                 continue
         
-        # Apply date filter
         if timestamp < START_DATE:
             continue
         
@@ -328,22 +298,23 @@ def _parse_finapp_response(resp):
         n1 = None
         n2 = None
         
-        for key in ["N1", "n1", "neutron_count", "counts", "fast_neutrons"]:
+        for key in ["N1", "n1", "neutron_count", "counts"]:
             if key in row and row[key] is not None:
-                n1 = row[key]
+                n1 = _to_float(row[key])
                 break
         
-        for key in ["N2", "n2", "neutron_count_2", "thermal_neutrons"]:
+        for key in ["N2", "n2", "neutron_count_2"]:
             if key in row and row[key] is not None:
-                n2 = row[key]
+                n2 = _to_float(row[key])
                 break
         
-        records.append({
-            "timestamp": timestamp.isoformat(),
-            "N1_cph": _to_float(n1),
-            "N2_cph": _to_float(n2),
-            "source": "finapp",
-        })
+        if n1 is not None:
+            records.append({
+                "timestamp": timestamp.isoformat(),
+                "N1_cph": n1,
+                "N2_cph": n2,
+                "source": "finapp",
+            })
     
     print(f"   ✅ Finapp: {len(records)} records from {START_DATE.date()}")
     return records
