@@ -37,7 +37,7 @@ START_DATE = datetime(2026, 8, 20, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
-# HYDROINNOVA - Optimized for the exact CSV format
+# HYDROINNOVA
 # ---------------------------------------------------------------------------
 
 def fetch_hydroinnova():
@@ -53,21 +53,17 @@ def fetch_hydroinnova():
 
     # Parse the CSV data directly
     try:
-        # Clean up - remove any HTML tags or extra text
         text = resp.text
         if "UTC" in text:
             text = text[text.index("UTC"):]
         
-        # Remove any HTML tags
         text = re.sub(r'<[^>]+>', '', text)
         
-        # Parse CSV
         csv_data = io.StringIO(text)
         reader = csv.DictReader(csv_data)
         
         records = []
         for row in reader:
-            # Get timestamp
             ts_str = row.get("UTC", "").strip()
             if not ts_str:
                 continue
@@ -78,15 +74,12 @@ def fetch_hydroinnova():
             except ValueError:
                 continue
             
-            # Filter by date (August 20, 2026 onwards)
             if timestamp < START_DATE:
                 continue
             
-            # Get N1 and N2 values
             n1 = _to_float(row.get("N1 [cph]"))
             n2 = _to_float(row.get("N2 [cph]"))
             
-            # Only add if we have N1 data
             if n1 is not None:
                 records.append({
                     "timestamp": timestamp.isoformat(),
@@ -100,12 +93,11 @@ def fetch_hydroinnova():
         
     except Exception as e:
         print(f"   ❌ Hydroinnova parsing failed: {e}")
-        print(f"   First 500 chars of response: {resp.text[:500]}")
         return []
 
 
 # ---------------------------------------------------------------------------
-# FINAPP - Keep as is from previous version
+# FINAPP - WITH BETTER DEBUGGING
 # ---------------------------------------------------------------------------
 
 def fetch_finapp():
@@ -133,23 +125,62 @@ def fetch_finapp():
         print("   Step 1: Getting login page...")
         login_page = session.get(FINAPP_LOGIN_PAGE_URL, timeout=30)
         login_page.raise_for_status()
-        print(f"   ✅ Login page loaded")
+        print(f"   ✅ Login page loaded (status: {login_page.status_code})")
 
-        # Extract CSRF token
+        # DEBUG: Save the login page HTML to see what's on it
+        with open("/tmp/finapp_login.html", "w") as f:
+            f.write(login_page.text)
+        print("   📄 Login page saved to /tmp/finapp_login.html")
+
+        # Extract CSRF token - try multiple methods
         csrf_token = _extract_csrf_token(login_page.text)
         if not csrf_token:
             print("   ❌ Could not extract CSRF token")
+            print("   🔍 Looking for CSRF patterns in page...")
+            
+            # Search for common patterns
+            if 'csrf' in login_page.text.lower():
+                print("   🔍 'csrf' found in page - checking around it:")
+                import re
+                for match in re.finditer(r'.{0,50}csrf.{0,50}', login_page.text, re.IGNORECASE):
+                    print(f"      ...{match.group()}...")
+            
+            # Check if it's a different login system
+            if 'laravel' in login_page.text.lower():
+                print("   ℹ️  Page appears to be Laravel")
+            if 'finapp' in login_page.text.lower():
+                print("   ℹ️  Page appears to be Finapp")
+            
             return []
         
         print(f"   ✅ CSRF token: {csrf_token[:20]}...")
 
         # Step 2: Login
         print("   Step 2: Logging in...")
+        
+        # Try to detect the actual form field names
+        form_fields = _detect_login_fields(login_page.text)
+        print(f"   🔍 Detected form fields: {form_fields}")
+        
         login_data = {
             "_token": csrf_token,
-            "email": FINAPP_USERNAME,
-            "password": FINAPP_PASSWORD,
         }
+        
+        # Map detected fields to our credentials
+        if "email" in form_fields:
+            login_data["email"] = FINAPP_USERNAME
+        elif "username" in form_fields:
+            login_data["username"] = FINAPP_USERNAME
+        elif "login" in form_fields:
+            login_data["login"] = FINAPP_USERNAME
+        else:
+            # Default to email
+            login_data["email"] = FINAPP_USERNAME
+        
+        if "password" in form_fields:
+            login_data["password"] = FINAPP_PASSWORD
+        
+        print(f"   📤 Login payload: { {k: v[:3]+'***' if k != '_token' else v[:20]+'...' for k,v in login_data.items()} }")
         
         login_resp = session.post(
             FINAPP_LOGIN_PAGE_URL,
@@ -163,78 +194,132 @@ def fetch_finapp():
         )
         login_resp.raise_for_status()
         print(f"   ✅ Login response: {login_resp.status_code}")
-        print(f"   Current URL: {login_resp.url}")
+        print(f"   📍 Current URL: {login_resp.url}")
 
         # Check if login succeeded
         if "/login" in login_resp.url:
             print("   ❌ Login failed - still on login page")
+            print(f"   📄 Response snippet: {login_resp.text[:300]}")
             return []
 
         # Step 3: Fetch data
         print("   Step 3: Fetching data...")
+        
+        # Try with and without Accept header
+        headers = {"Accept": "application/json"}
         data_resp = session.get(
             FINAPP_DATA_URL,
-            headers={"Accept": "application/json"},
+            headers=headers,
             timeout=30
         )
         data_resp.raise_for_status()
-        print(f"   ✅ Data fetched")
+        print(f"   ✅ Data fetched (status: {data_resp.status_code})")
+        print(f"   📄 Content-Type: {data_resp.headers.get('Content-Type', 'unknown')}")
 
         return _parse_finapp_response(data_resp)
 
     except requests.exceptions.RequestException as e:
         print(f"   ❌ Request error: {e}")
+        if hasattr(e, 'response') and e.response:
+            print(f"   📄 Response: {e.response.text[:200]}")
         return []
     except Exception as e:
         print(f"   ❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 
 def _extract_csrf_token(html):
-    """Extract CSRF token from Laravel page."""
+    """Extract CSRF token from Laravel page using multiple methods."""
+    # Method 1: Meta tag
     meta_match = re.search(r'<meta name="csrf-token" content="([^"]+)"', html, re.IGNORECASE)
     if meta_match:
         return meta_match.group(1)
     
+    # Method 2: Input field
     input_match = re.search(r'<input[^>]*name="_token"[^>]*value="([^"]+)"', html, re.IGNORECASE)
     if input_match:
         return input_match.group(1)
     
+    # Method 3: JavaScript variable
+    js_match = re.search(r'csrfToken\s*=\s*["\']([^"\']+)["\']', html, re.IGNORECASE)
+    if js_match:
+        return js_match.group(1)
+    
+    # Method 4: Any _token pattern
+    token_match = re.search(r'_token["\']?\s*[:=]\s*["\']([^"\']+)["\']', html, re.IGNORECASE)
+    if token_match:
+        return token_match.group(1)
+    
     return None
+
+
+def _detect_login_fields(html):
+    """Detect form field names for login."""
+    fields = []
+    
+    # Look for input fields in forms
+    form_matches = re.findall(r'<input[^>]*name="([^"]+)"[^>]*>', html, re.IGNORECASE)
+    for name in form_matches:
+        if name.lower() in ['email', 'username', 'login', 'password', '_token']:
+            fields.append(name)
+    
+    return fields
 
 
 def _parse_finapp_response(resp):
     """Parse Finapp response with date filtering."""
+    content_type = resp.headers.get("Content-Type", "")
+    print(f"   🔍 Parsing response (Content-Type: {content_type})")
+
+    # Try to parse JSON
     try:
         payload = resp.json()
         print(f"   ✅ JSON parsed successfully")
-    except json.JSONDecodeError:
-        print(f"   ❌ Not JSON")
+        print(f"   📊 Response structure: {type(payload)}")
+        if isinstance(payload, dict):
+            print(f"   📊 Top-level keys: {list(payload.keys())}")
+    except json.JSONDecodeError as e:
+        print(f"   ❌ Not JSON: {e}")
+        print(f"   📄 Response snippet: {resp.text[:300]}")
         return []
 
     # Handle different response structures
     rows = []
     if isinstance(payload, list):
         rows = payload
+        print(f"   📊 Found list with {len(rows)} items")
     elif isinstance(payload, dict):
-        for key in ["data", "result", "records", "items"]:
+        # Try common Laravel patterns
+        for key in ["data", "result", "records", "items", "installation"]:
             if key in payload and payload[key]:
                 if isinstance(payload[key], list):
                     rows = payload[key]
+                    print(f"   📊 Found list in '{key}' with {len(rows)} items")
+                    break
+                elif isinstance(payload[key], dict) and "data" in payload[key]:
+                    rows = payload[key]["data"]
+                    print(f"   📊 Found data in '{key}.data' with {len(rows)} items")
                     break
     
+    # If still empty, check if payload itself is the record
+    if not rows and any(k in payload for k in ["timestamp", "date", "created_at", "N1", "neutron_count"]):
+        rows = [payload]
+        print(f"   📊 Using payload as single record")
+
     if not rows:
-        print(f"   ⚠️ No data found in response")
+        print(f"   ⚠️ No data rows found")
         return []
 
     records = []
     for row in rows:
-        if not row:
+        if not row or not isinstance(row, dict):
             continue
         
         # Extract timestamp
         ts_str = None
-        for key in ["timestamp", "date", "created_at", "time"]:
+        for key in ["timestamp", "date", "created_at", "updated_at", "time", "datetime"]:
             if key in row and row[key]:
                 ts_str = row[key]
                 break
@@ -242,6 +327,7 @@ def _parse_finapp_response(resp):
         if not ts_str:
             continue
         
+        # Parse timestamp
         try:
             if isinstance(ts_str, (int, float)):
                 timestamp = datetime.fromtimestamp(ts_str, tz=timezone.utc)
@@ -260,25 +346,18 @@ def _parse_finapp_response(resp):
         if timestamp < START_DATE:
             continue
         
-        # Extract N1 and N2
+        # Extract N1
         n1 = None
-        n2 = None
-        
-        for key in ["N1", "n1", "neutron_count", "counts"]:
+        for key in ["N1", "n1", "neutron_count", "counts", "fast_neutrons"]:
             if key in row and row[key] is not None:
                 n1 = _to_float(row[key])
-                break
-        
-        for key in ["N2", "n2", "neutron_count_2"]:
-            if key in row and row[key] is not None:
-                n2 = _to_float(row[key])
-                break
+                if n1 is not None:
+                    break
         
         if n1 is not None:
             records.append({
                 "timestamp": timestamp.isoformat(),
                 "N1_cph": n1,
-                "N2_cph": n2,
                 "source": "finapp",
             })
     
