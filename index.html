@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marchfeld CRNS — Neutron Count Comparison</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e1512;
+    --panel: #141d19;
+    --line: #24332c;
+    --text: #d8e4de;
+    --muted: #7d9188;
+    --hydro: #5ecbb0;   /* teal — Hydroinnova */
+    --fin: #e0a458;     /* amber — Finapp */
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .title-block .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .station {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .status {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .status .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--hydro);
+    margin-right: 6px;
+    box-shadow: 0 0 6px var(--hydro);
+  }
+
+  main {
+    padding: 28px 32px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .legend-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .swatch { width: 20px; height: 3px; border-radius: 2px; }
+  .swatch.hydro { background: var(--hydro); }
+  .swatch.fin { background: var(--fin); }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .chart-wrap { height: 440px; position: relative; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .stat .value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .stat .value.hydro { color: var(--hydro); }
+  .stat .value.fin { color: var(--fin); }
+
+  .empty-note {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 16px;
+  }
+
+  footer {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    padding: 24px 0 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <p class="eyebrow">Cosmic Ray Neutron Sensing</p>
+    <h1>Neutron Count Comparison</h1>
+    <div class="station">Marchfeld station — Finapp vs. Hydroinnova</div>
+  </div>
+  <div class="status">
+    <div><span class="dot"></span><span id="updated-at">Loading…</span></div>
+    <div style="margin-top:4px;">Data refreshed via GitHub Actions</div>
+  </div>
+</header>
+
+<main>
+  <div class="legend-row">
+    <div class="legend-item"><span class="swatch hydro"></span>Hydroinnova · N1 [cph]</div>
+    <div class="legend-item"><span class="swatch fin"></span>Finapp · N1 [cph]</div>
+  </div>
+
+  <div class="panel">
+    <div class="chart-wrap">
+      <canvas id="neutronChart"></canvas>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="empty-note" id="finapp-note" style="display:none;">
+    No Finapp data yet — once Finapp credentials are added as GitHub secrets and the
+    "Refresh neutron data" workflow is run, its series will appear here alongside Hydroinnova.
+  </div>
+</main>
+
+<footer>Marchfeld CRNS dashboard · click "Run workflow" under the Actions tab to pull fresh data</footer>
+
+<script>
+async function loadData() {
+  const res = await fetch('data.json', { cache: 'no-store' });
+  return res.json();
+}
+
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function mean(arr) {
+  const vals = arr.filter(v => v !== null && v !== undefined);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+(async () => {
+  const data = await loadData();
+
+  document.getElementById('updated-at').textContent =
+    'Last updated ' + (data.updated_at ? fmtTime(data.updated_at) : 'unknown');
+
+  const hydro = (data.hydroinnova || []).slice().reverse(); // oldest -> newest
+  const fin = (data.finapp || []).slice().reverse();
+
+  if (!fin.length) {
+    document.getElementById('finapp-note').style.display = 'block';
+  }
+
+  const ctx = document.getElementById('neutronChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hydro.map(r => fmtTime(r.timestamp)),
+      datasets: [
+        {
+          label: 'Hydroinnova N1 [cph]',
+          data: hydro.map(r => r.N1_cph),
+          borderColor: '#5ecbb0',
+          backgroundColor: 'rgba(94,203,176,0.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.25,
+          fill: true,
+        },
+        {
+          label: 'Finapp N1 [cph]',
+          data: fin.map(r => r.N1_cph),
+          borderColor: '#e0a458',
+          backgroundColor: 'rgba(224,164,88,0.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.25,
+          fill: true,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          ticks: { color: '#7d9188', maxTicksLimit: 10, font: { family: 'IBM Plex Mono', size: 11 } },
+          grid: { color: '#24332c' },
+        },
+        y: {
+          ticks: { color: '#7d9188', font: { family: 'IBM Plex Mono', size: 11 } },
+          grid: { color: '#24332c' },
+          title: { display: true, text: 'Neutron count [cph]', color: '#7d9188' },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#141d19',
+          borderColor: '#24332c',
+          borderWidth: 1,
+          titleFont: { family: 'IBM Plex Mono' },
+          bodyFont: { family: 'IBM Plex Mono' },
+        }
+      }
+    }
+  });
+
+  const hydroMean = mean(hydro.map(r => r.N1_cph));
+  const finMean = mean(fin.map(r => r.N1_cph));
+  const statsEl = document.getElementById('stats');
+  statsEl.innerHTML = `
+    <div class="stat"><div class="label">Hydroinnova · latest N1</div>
+      <div class="value hydro">${hydro.length ? hydro[hydro.length-1].N1_cph : '—'} cph</div></div>
+    <div class="stat"><div class="label">Hydroinnova · avg N1 (window)</div>
+      <div class="value hydro">${hydroMean ? hydroMean.toFixed(0) : '—'} cph</div></div>
+    <div class="stat"><div class="label">Finapp · latest N1</div>
+      <div class="value fin">${fin.length ? fin[fin.length-1].N1_cph : '—'} cph</div></div>
+    <div class="stat"><div class="label">Finapp · avg N1 (window)</div>
+      <div class="value fin">${finMean ? finMean.toFixed(0) : '—'} cph</div></div>
+  `;
+})();
+</script>
+
+</body>
+</html>
