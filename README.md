@@ -11,13 +11,12 @@ Compares neutron counts from two Cosmic Ray Neutron Sensors at Marchfeld:
   the "Run workflow" button under the repo's **Actions** tab whenever you want
   fresh data. It commits the updated `data.json`, and the live site picks it up
   automatically.
-- Your Finapp password is never stored in the code — it lives only as a GitHub
+- Finapp password is never stored in the code — it lives only as a GitHub
   **secret**, injected as an environment variable when the workflow runs.
 
 ## One-time setup
 
-1. **Create the repo.** Push this folder to a new GitHub repo (private or
-   public — see note on Pages below).
+1. **Create the repo.**
 
 2. **Enable GitHub Pages.**
    Settings → Pages → Source: "Deploy from a branch" → Branch: `main`,
