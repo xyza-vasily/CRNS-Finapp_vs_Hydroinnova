@@ -16,13 +16,10 @@ import requests
 # CONFIG
 # ---------------------------------------------------------------------------
 
-# Try multiple Hydroinnova URLs to find neutron data
-HYDROINNOVA_URLS = [
-    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=neutron1&IM=300534060129810&fn=Marchfeld",
-    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=neutron&IM=300534060129810&fn=Marchfeld",
-    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=raw&IM=300534060129810&fn=Marchfeld",
-    "http://nearfld.com/reguser/queryData.php?tz=1:00&vw=soil_moisture&IM=300534060129810&fn=Marchfeld",
-]
+HYDROINNOVA_URL = (
+    "http://nearfld.com/reguser/queryData.php"
+    "?tz=1:00&vw=soil_moisture4&IM=300534060129810&fn=Marchfeld"
+)
 
 FINAPP_BASE_URL = "https://data.finapptech.com"
 FINAPP_LOGIN_PAGE_URL = f"{FINAPP_BASE_URL}/login"
@@ -40,106 +37,75 @@ START_DATE = datetime(2026, 8, 20, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
-# HYDROINNOVA - Try multiple URLs
+# HYDROINNOVA - Optimized for the exact CSV format
 # ---------------------------------------------------------------------------
 
 def fetch_hydroinnova():
-    """Try multiple URLs to find neutron data from Hydroinnova."""
+    """Fetch and parse the Hydroinnova CSV feed."""
     print("📡 Fetching Hydroinnova data...")
-    
-    for i, url in enumerate(HYDROINNOVA_URLS, 1):
-        print(f"   Trying URL {i}/{len(HYDROINNOVA_URLS)}: {url}")
-        try:
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
+    try:
+        resp = requests.get(HYDROINNOVA_URL, timeout=30)
+        resp.raise_for_status()
+        print(f"   ✅ Hydroinnova response: {resp.status_code}")
+    except Exception as e:
+        print(f"   ❌ Hydroinnova request failed: {e}")
+        return []
+
+    # Parse the CSV data directly
+    try:
+        # Clean up - remove any HTML tags or extra text
+        text = resp.text
+        if "UTC" in text:
+            text = text[text.index("UTC"):]
+        
+        # Remove any HTML tags
+        text = re.sub(r'<[^>]+>', '', text)
+        
+        # Parse CSV
+        csv_data = io.StringIO(text)
+        reader = csv.DictReader(csv_data)
+        
+        records = []
+        for row in reader:
+            # Get timestamp
+            ts_str = row.get("UTC", "").strip()
+            if not ts_str:
+                continue
             
-            records = _parse_hydroinnova_response(resp.text)
-            if records:
-                print(f"   ✅ Found {len(records)} neutron records from URL {i}")
-                return records
-            else:
-                print(f"   ⚠️ No records found, trying next URL...")
-                
-        except Exception as e:
-            print(f"   ❌ Error: {e}")
-            continue
-    
-    print("   ❌ No neutron data found in any URL")
-    return []
-
-
-def _parse_hydroinnova_response(text):
-    """Parse Hydroinnova response and extract neutron data."""
-    # Check if it's CSV data
-    if "UTC" not in text:
+            try:
+                timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            
+            # Filter by date (August 20, 2026 onwards)
+            if timestamp < START_DATE:
+                continue
+            
+            # Get N1 and N2 values
+            n1 = _to_float(row.get("N1 [cph]"))
+            n2 = _to_float(row.get("N2 [cph]"))
+            
+            # Only add if we have N1 data
+            if n1 is not None:
+                records.append({
+                    "timestamp": timestamp.isoformat(),
+                    "N1_cph": n1,
+                    "N2_cph": n2,
+                    "source": "hydroinnova",
+                })
+        
+        print(f"   ✅ Hydroinnova: {len(records)} records from {START_DATE.date()}")
+        return records
+        
+    except Exception as e:
+        print(f"   ❌ Hydroinnova parsing failed: {e}")
+        print(f"   First 500 chars of response: {resp.text[:500]}")
         return []
-    
-    # Extract CSV part
-    text = text[text.index("UTC"):]
-    text = re.sub(r'<[^>]+>', '', text)
-    
-    lines = [l.strip() for l in text.split('\n') if l.strip()]
-    if len(lines) < 2:
-        return []
-    
-    # Parse header
-    header = [h.strip() for h in lines[0].split(',')]
-    
-    # Check if we have neutron columns
-    has_n1 = any('N1' in h for h in header)
-    has_n2 = any('N2' in h for h in header)
-    
-    if not has_n1:
-        print(f"   ⚠️ No N1 column found. Header: {header}")
-        return []
-    
-    records = []
-    for line in lines[1:]:
-        parts = [p.strip() for p in line.split(',')]
-        if len(parts) < len(header):
-            continue
-        
-        row = dict(zip(header, parts))
-        
-        # Get timestamp
-        ts_str = row.get("UTC", "").strip()
-        if not ts_str:
-            continue
-        
-        try:
-            timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-        
-        # Filter by date
-        if timestamp < START_DATE:
-            continue
-        
-        # Get N1 and N2 values
-        n1 = None
-        n2 = None
-        
-        for key, val in row.items():
-            if 'N1' in key and val:
-                n1 = _to_float(val)
-            elif 'N2' in key and val:
-                n2 = _to_float(val)
-        
-        # Only add if we have at least N1
-        if n1 is not None:
-            records.append({
-                "timestamp": timestamp.isoformat(),
-                "N1_cph": n1,
-                "N2_cph": n2,
-                "source": "hydroinnova",
-            })
-    
-    return records
 
 
 # ---------------------------------------------------------------------------
-# FINAPP (simplified for now)
+# FINAPP - Keep as is from previous version
 # ---------------------------------------------------------------------------
 
 def fetch_finapp():
