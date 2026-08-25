@@ -1,6 +1,627 @@
 {
-  "updated_at": "2026-08-25T08:56:58.088247+00:00",
+  "updated_at": "2026-08-25T09:03:24.762427+00:00",
   "start_date": "2026-08-20T00:00:00+00:00",
-  "hydroinnova": [],
+  "hydroinnova": [
+    {
+      "timestamp": "2026-08-25T08:05:00+00:00",
+      "N1_cph": 1881.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T07:05:00+00:00",
+      "N1_cph": 1771.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T06:05:00+00:00",
+      "N1_cph": 1811.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T05:05:00+00:00",
+      "N1_cph": 1862.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T04:05:00+00:00",
+      "N1_cph": 1784.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T03:05:00+00:00",
+      "N1_cph": 1707.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T02:05:00+00:00",
+      "N1_cph": 1729.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-25T00:05:00+00:00",
+      "N1_cph": 1732.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T23:05:00+00:00",
+      "N1_cph": 1753.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T22:05:00+00:00",
+      "N1_cph": 1722.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T21:05:00+00:00",
+      "N1_cph": 1733.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T20:05:00+00:00",
+      "N1_cph": 1810.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T19:09:00+00:00",
+      "N1_cph": 1742.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T18:05:00+00:00",
+      "N1_cph": 1815.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T17:05:00+00:00",
+      "N1_cph": 1720.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T16:05:00+00:00",
+      "N1_cph": 1752.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T15:05:00+00:00",
+      "N1_cph": 1704.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T14:05:00+00:00",
+      "N1_cph": 1810.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T12:05:00+00:00",
+      "N1_cph": 1818.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T11:05:00+00:00",
+      "N1_cph": 1692.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T10:05:00+00:00",
+      "N1_cph": 1711.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T09:09:00+00:00",
+      "N1_cph": 1618.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T08:05:00+00:00",
+      "N1_cph": 1704.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T07:05:00+00:00",
+      "N1_cph": 1697.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T06:06:00+00:00",
+      "N1_cph": 1608.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T05:05:00+00:00",
+      "N1_cph": 1645.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T04:05:00+00:00",
+      "N1_cph": 1675.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T01:05:00+00:00",
+      "N1_cph": 1664.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-24T00:09:00+00:00",
+      "N1_cph": 1739.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T23:05:00+00:00",
+      "N1_cph": 1667.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T22:05:00+00:00",
+      "N1_cph": 1681.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T21:05:00+00:00",
+      "N1_cph": 1732.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T20:05:00+00:00",
+      "N1_cph": 1682.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T19:05:00+00:00",
+      "N1_cph": 1607.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T18:06:00+00:00",
+      "N1_cph": 1657.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T17:05:00+00:00",
+      "N1_cph": 1657.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T16:05:00+00:00",
+      "N1_cph": 1784.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T15:10:00+00:00",
+      "N1_cph": 1663.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T14:06:00+00:00",
+      "N1_cph": 1750.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T13:05:00+00:00",
+      "N1_cph": 1684.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T12:05:00+00:00",
+      "N1_cph": 1651.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T11:05:00+00:00",
+      "N1_cph": 1660.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T10:05:00+00:00",
+      "N1_cph": 1678.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T09:05:00+00:00",
+      "N1_cph": 1704.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T08:05:00+00:00",
+      "N1_cph": 1612.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T07:06:00+00:00",
+      "N1_cph": 1589.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T06:09:00+00:00",
+      "N1_cph": 1708.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T05:05:00+00:00",
+      "N1_cph": 1578.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T04:05:00+00:00",
+      "N1_cph": 1580.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T03:05:00+00:00",
+      "N1_cph": 1712.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T02:09:00+00:00",
+      "N1_cph": 1650.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T01:05:00+00:00",
+      "N1_cph": 1608.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-23T00:05:00+00:00",
+      "N1_cph": 1679.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T23:05:00+00:00",
+      "N1_cph": 1703.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T22:05:00+00:00",
+      "N1_cph": 1644.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T21:05:00+00:00",
+      "N1_cph": 1637.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T20:05:00+00:00",
+      "N1_cph": 1714.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T19:05:00+00:00",
+      "N1_cph": 1760.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T18:05:00+00:00",
+      "N1_cph": 1717.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T17:05:00+00:00",
+      "N1_cph": 1732.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T16:05:00+00:00",
+      "N1_cph": 1708.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T15:05:00+00:00",
+      "N1_cph": 1666.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T14:05:00+00:00",
+      "N1_cph": 1666.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T13:06:00+00:00",
+      "N1_cph": 1783.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T12:05:00+00:00",
+      "N1_cph": 1561.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T11:05:00+00:00",
+      "N1_cph": 1756.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T10:05:00+00:00",
+      "N1_cph": 1713.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T09:05:00+00:00",
+      "N1_cph": 1647.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T08:05:00+00:00",
+      "N1_cph": 1638.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T07:09:00+00:00",
+      "N1_cph": 1655.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T06:05:00+00:00",
+      "N1_cph": 1688.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T05:05:00+00:00",
+      "N1_cph": 1671.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T04:09:00+00:00",
+      "N1_cph": 1747.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T03:05:00+00:00",
+      "N1_cph": 1654.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T02:05:00+00:00",
+      "N1_cph": 1735.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T01:05:00+00:00",
+      "N1_cph": 1679.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-22T00:05:00+00:00",
+      "N1_cph": 1671.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T23:05:00+00:00",
+      "N1_cph": 1698.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T22:09:00+00:00",
+      "N1_cph": 1656.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T21:05:00+00:00",
+      "N1_cph": 1723.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T20:09:00+00:00",
+      "N1_cph": 1790.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T19:09:00+00:00",
+      "N1_cph": 1665.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T18:13:00+00:00",
+      "N1_cph": 1746.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T17:05:00+00:00",
+      "N1_cph": 1775.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T16:05:00+00:00",
+      "N1_cph": 1683.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T15:05:00+00:00",
+      "N1_cph": 1717.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T14:05:00+00:00",
+      "N1_cph": 1739.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T13:05:00+00:00",
+      "N1_cph": 1630.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T12:05:00+00:00",
+      "N1_cph": 1682.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T11:05:00+00:00",
+      "N1_cph": 1663.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T10:05:00+00:00",
+      "N1_cph": 1692.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T09:05:00+00:00",
+      "N1_cph": 1645.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T08:06:00+00:00",
+      "N1_cph": 1738.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T07:05:00+00:00",
+      "N1_cph": 1582.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T06:06:00+00:00",
+      "N1_cph": 1602.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T05:05:00+00:00",
+      "N1_cph": 1600.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T04:06:00+00:00",
+      "N1_cph": 1618.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T03:05:00+00:00",
+      "N1_cph": 1638.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T02:05:00+00:00",
+      "N1_cph": 1613.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T01:05:00+00:00",
+      "N1_cph": 1619.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-21T00:09:00+00:00",
+      "N1_cph": 1598.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T23:05:00+00:00",
+      "N1_cph": 1552.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T22:06:00+00:00",
+      "N1_cph": 1589.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T21:05:00+00:00",
+      "N1_cph": 1630.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T20:09:00+00:00",
+      "N1_cph": 1690.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T19:05:00+00:00",
+      "N1_cph": 1595.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T18:06:00+00:00",
+      "N1_cph": 1619.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T17:05:00+00:00",
+      "N1_cph": 1628.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T16:05:00+00:00",
+      "N1_cph": 1634.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T15:05:00+00:00",
+      "N1_cph": 1809.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T14:09:00+00:00",
+      "N1_cph": 1912.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T13:05:00+00:00",
+      "N1_cph": 1986.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T12:05:00+00:00",
+      "N1_cph": 2077.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T11:05:00+00:00",
+      "N1_cph": 1997.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T10:05:00+00:00",
+      "N1_cph": 1926.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T09:05:00+00:00",
+      "N1_cph": 1965.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T08:05:00+00:00",
+      "N1_cph": 1949.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T07:06:00+00:00",
+      "N1_cph": 1918.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T06:05:00+00:00",
+      "N1_cph": 1981.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T04:05:00+00:00",
+      "N1_cph": 1934.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T03:05:00+00:00",
+      "N1_cph": 1980.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T02:05:00+00:00",
+      "N1_cph": 1938.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T01:05:00+00:00",
+      "N1_cph": 1948.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-08-20T00:06:00+00:00",
+      "N1_cph": 1997.0,
+      "source": "hydroinnova"
+    }
+  ],
   "finapp": []
 }
