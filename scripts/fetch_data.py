@@ -60,7 +60,7 @@ def fetch_hydroinnova():
         text = re.sub(r'(?<!^)(?=\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},)', '\n', text)
 
         csv_data = io.StringIO(text)
-        reader = csv.DictReader(csv_data)
+        reader = csv.DictReader(csv_data, skipinitialspace=True)
 
         records = []
         for row in reader:
