@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 from datetime import datetime, timezone
 import requests
 from bs4 import BeautifulSoup
@@ -97,7 +98,16 @@ def fetch_hydroinnova():
 # ---------------------------------------------------------------------------
 
 def fetch_finapp():
-    """Log in to Finapp and fetch neutron data with proper session handling."""
+    """
+    Log in to Finapp and fetch neutron data.
+
+    Finapp is a Laravel + Inertia.js app. Its login does NOT use a classic
+    HTML form post with a hidden _token field -- it uses a JSON API call,
+    authenticated via a CSRF token that Laravel sets as an "XSRF-TOKEN"
+    cookie on any page load. The browser (via axios) reads that cookie,
+    URL-decodes it, and sends it back as an "X-XSRF-TOKEN" header on the
+    login POST. This mirrors that exact flow.
+    """
     if not (FINAPP_USERNAME and FINAPP_PASSWORD):
         print("FINAPP_USERNAME/PASSWORD not set")
         return []
@@ -106,80 +116,59 @@ def fetch_finapp():
 
     session = requests.Session()
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        "DNT": "1",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html, application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
     })
 
     try:
-        print("   Step 1: Getting login page...")
+        print("   Step 1: Loading login page to obtain XSRF-TOKEN cookie...")
         login_page = session.get(FINAPP_LOGIN_URL, timeout=30)
         login_page.raise_for_status()
         print(f"   Login page loaded (status: {login_page.status_code})")
+        print(f"   Cookies received: {list(session.cookies.keys())}")
 
-        soup = BeautifulSoup(login_page.text, 'html.parser')
-
-        csrf_token = None
-
-        meta_tag = soup.find('meta', {'name': 'csrf-token'})
-        if meta_tag:
-            csrf_token = meta_tag.get('content')
-
-        if not csrf_token:
-            token_input = soup.find('input', {'name': '_token'})
-            if token_input:
-                csrf_token = token_input.get('value')
-
-        if not csrf_token:
-            for input_tag in soup.find_all('input'):
-                if 'token' in str(input_tag).lower():
-                    csrf_token = input_tag.get('value')
-                    break
-
-        if not csrf_token:
-            print("   Could not find CSRF token")
-            with open("/tmp/finapp_login.html", "w") as f:
-                f.write(login_page.text)
-            print("   Saved login page to /tmp/finapp_login.html")
+        xsrf_cookie = session.cookies.get("XSRF-TOKEN")
+        if not xsrf_cookie:
+            print("   No XSRF-TOKEN cookie found after loading login page.")
             return []
 
-        print(f"   CSRF token found: {csrf_token[:20]}...")
+        xsrf_token = urllib.parse.unquote(xsrf_cookie)
+        print(f"   XSRF-TOKEN found: {xsrf_token[:20]}...")
 
-        print("   Step 2: Logging in...")
-
-        login_data = {
-            '_token': csrf_token,
-            'email': FINAPP_USERNAME,
-            'password': FINAPP_PASSWORD,
-        }
-
-        if soup.find('input', {'name': 'remember'}):
-            login_data['remember'] = 'on'
-
+        print("   Step 2: Logging in (JSON POST with X-XSRF-TOKEN header)...")
         login_resp = session.post(
             FINAPP_LOGIN_URL,
-            data=login_data,
+            json={
+                "email": FINAPP_USERNAME,
+                "password": FINAPP_PASSWORD,
+            },
             headers={
-                'Referer': FINAPP_LOGIN_URL,
-                'Content-Type': 'application/x-www-form-urlencoded',
+                "Content-Type": "application/json",
+                "Accept": "text/html, application/xhtml+xml",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-XSRF-TOKEN": xsrf_token,
+                "Referer": FINAPP_LOGIN_URL,
+                "Origin": FINAPP_BASE_URL,
             },
             timeout=30,
             allow_redirects=True,
         )
-        login_resp.raise_for_status()
 
         print(f"   Login response: {login_resp.status_code}")
         print(f"   Final URL: {login_resp.url}")
 
-        if '/login' in login_resp.url:
-            print("   Login failed - still on login page")
-            print(f"   Response snippet: {login_resp.text[:300]}")
+        if login_resp.status_code >= 400:
+            print(f"   Login request failed with status {login_resp.status_code}")
+            print(f"   Response snippet: {login_resp.text[:500]}")
             return []
 
+        if '/login' in login_resp.url:
+            print("   Login failed - still on login page")
+            print(f"   Response snippet: {login_resp.text[:500]}")
+            return []
+
+        print("   Login succeeded.")
         print("   Step 3: Fetching installation chart data...")
 
         data_resp = session.get(
