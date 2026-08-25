@@ -23,10 +23,9 @@ HYDROINNOVA_URL = (
 
 FINAPP_BASE_URL = "https://data.finapptech.com"
 FINAPP_LOGIN_URL = f"{FINAPP_BASE_URL}/login"
-FINAPP_DATA_URL = (
-    f"{FINAPP_BASE_URL}/user/installation/info"
-    "?idInstallation=10617&inst_name=IAEA%20SWMCNL"
-)
+FINAPP_INSTALLATION_ID = "10617"
+FINAPP_DATA_URL = f"{FINAPP_BASE_URL}/user/installation/get-charts/{FINAPP_INSTALLATION_ID}"
+FINAPP_NEUTRON_FIELD = "neutrons_count_above_dynamic_threshold"
 FINAPP_USERNAME = os.environ.get("FINAPP_USERNAME", "")
 FINAPP_PASSWORD = os.environ.get("FINAPP_PASSWORD", "")
 
@@ -181,19 +180,12 @@ def fetch_finapp():
             print(f"   Response snippet: {login_resp.text[:300]}")
             return []
 
-        print("   Step 3: Fetching installation data...")
-
-        main_resp = session.get(
-            f"{FINAPP_BASE_URL}/user/dashboard",
-            timeout=30
-        )
-        main_resp.raise_for_status()
-        print(f"   Dashboard loaded: {main_resp.status_code}")
+        print("   Step 3: Fetching installation chart data...")
 
         data_resp = session.get(
             FINAPP_DATA_URL,
             headers={
-                'Accept': 'application/json, text/html, */*',
+                'Accept': 'application/json, text/plain, */*',
                 'X-Requested-With': 'XMLHttpRequest',
             },
             timeout=30
@@ -217,162 +209,88 @@ def fetch_finapp():
 
 
 def _parse_finapp_response(resp):
-    """Parse Finapp response."""
+    """
+    Parse the /user/installation/get-charts/<id> response.
+
+    Shape (confirmed from the live response):
+      {
+        "charts": [
+          {
+            "name": "Neutron Counts",
+            "field": "neutrons_count_above_dynamic_threshold",
+            "data": {
+              "1": [
+                {"datetime": "2026-08-20 08:14:52+00", "value": "90", "acquisition_time": 166},
+                ...
+              ]
+            }
+          },
+          ... (other charts: Muon Counts, Hv Voltage, Pressure, etc.)
+        ],
+        "method": [...],
+        "timezone": "Europe/Rome"
+      }
+    """
     print("   Parsing Finapp response...")
 
     try:
         payload = resp.json()
-        print(f"   JSON parsed")
-        print(f"   Type: {type(payload)}")
-        if isinstance(payload, dict):
-            print(f"   Keys: {list(payload.keys())}")
     except json.JSONDecodeError:
-        print("   Response is HTML, trying to parse tables...")
-        return _parse_finapp_html(resp.text)
+        snippet = resp.text[:1500]
+        print("   Response was not JSON. First 1500 chars:")
+        print(snippet)
+        return []
 
-    rows = []
-    if isinstance(payload, list):
-        rows = payload
-    elif isinstance(payload, dict):
-        for key in ['data', 'result', 'records', 'items', 'installation', 'readings']:
-            if key in payload and payload[key]:
-                if isinstance(payload[key], list):
-                    rows = payload[key]
-                    print(f"   Found list in '{key}'")
-                    break
-                elif isinstance(payload[key], dict):
-                    if 'data' in payload[key]:
-                        rows = payload[key]['data']
-                        print(f"   Found data in '{key}.data'")
-                        break
+    charts = payload.get("charts", [])
+    neutron_chart = None
+    for chart in charts:
+        if chart.get("field") == FINAPP_NEUTRON_FIELD or chart.get("name") == "Neutron Counts":
+            neutron_chart = chart
+            break
 
-    if not rows:
-        print("   No data rows found")
-        with open("/tmp/finapp_response.json", "w") as f:
-            json.dump(payload, f, indent=2)
-        print("   Saved response to /tmp/finapp_response.json")
+    if not neutron_chart:
+        available = [c.get("name") for c in charts]
+        print(f"   Could not find a 'Neutron Counts' chart. Available charts: {available}")
+        return []
+
+    data_by_series = neutron_chart.get("data", {})
+    if not data_by_series:
+        print("   Neutron Counts chart has no data.")
         return []
 
     records = []
-    for row in rows:
-        if not row:
-            continue
+    for series_id, points in data_by_series.items():
+        for point in points:
+            ts_str = point.get("datetime")
+            value = point.get("value")
+            if not ts_str or value is None:
+                continue
 
-        ts_str = None
-        for key in ['timestamp', 'date', 'created_at', 'time', 'reading_time']:
-            if key in row and row[key]:
-                ts_str = row[key]
-                break
-
-        if not ts_str:
-            continue
-
-        try:
-            if isinstance(ts_str, (int, float)):
-                timestamp = datetime.fromtimestamp(ts_str, tz=timezone.utc)
-            else:
-                ts_str = str(ts_str).replace('Z', '+00:00')
-                if 'T' in ts_str:
-                    timestamp = datetime.fromisoformat(ts_str)
-                else:
-                    timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+            try:
+                # e.g. "2026-08-20 08:14:52+00" -> normalize the UTC offset
+                ts_normalized = ts_str.strip()
+                if ts_normalized.endswith("+00"):
+                    ts_normalized = ts_normalized[:-3] + "+00:00"
+                timestamp = datetime.fromisoformat(ts_normalized)
                 if timestamp.tzinfo is None:
                     timestamp = timestamp.replace(tzinfo=timezone.utc)
-        except (ValueError, TypeError):
-            continue
+            except ValueError:
+                continue
 
-        if timestamp < START_DATE:
-            continue
+            if timestamp < START_DATE:
+                continue
 
-        n1 = None
-        for key in ['N1', 'n1', 'neutron_count', 'counts', 'fast_neutrons', 'value']:
-            if key in row and row[key] is not None:
-                n1 = _to_float(row[key])
-                if n1 is not None:
-                    break
+            n1 = _to_float(value)
+            if n1 is not None:
+                records.append({
+                    "timestamp": timestamp.isoformat(),
+                    "N1_cph": n1,
+                    "source": "finapp",
+                })
 
-        if n1 is not None:
-            records.append({
-                "timestamp": timestamp.isoformat(),
-                "N1_cph": n1,
-                "source": "finapp",
-            })
-
+    records.sort(key=lambda r: r["timestamp"])
     print(f"   Finapp: {len(records)} records")
     return records
-
-
-def _parse_finapp_html(html):
-    """Parse Finapp data from HTML table."""
-    print("   Parsing HTML table...")
-
-    try:
-        soup = BeautifulSoup(html, 'html.parser')
-
-        tables = soup.find_all('table')
-        if not tables:
-            print("   No tables found in HTML")
-            return []
-
-        print(f"   Found {len(tables)} tables")
-
-        for table in tables:
-            rows = table.find_all('tr')
-            if len(rows) < 2:
-                continue
-
-            headers = [th.get_text().strip() for th in rows[0].find_all(['th', 'td'])]
-            print(f"   Headers: {headers}")
-
-            n1_idx = -1
-            time_idx = -1
-
-            for i, h in enumerate(headers):
-                if 'n1' in h.lower() or 'neutron' in h.lower() or 'count' in h.lower():
-                    n1_idx = i
-                if 'time' in h.lower() or 'date' in h.lower() or 'timestamp' in h.lower():
-                    time_idx = i
-
-            if n1_idx == -1 or time_idx == -1:
-                continue
-
-            records = []
-            for row in rows[1:]:
-                cols = row.find_all(['td', 'th'])
-                if len(cols) <= max(n1_idx, time_idx):
-                    continue
-
-                ts_str = cols[time_idx].get_text().strip()
-                n1_str = cols[n1_idx].get_text().strip()
-
-                if not ts_str or not n1_str:
-                    continue
-
-                try:
-                    timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
-                    timestamp = timestamp.replace(tzinfo=timezone.utc)
-                except ValueError:
-                    continue
-
-                if timestamp < START_DATE:
-                    continue
-
-                n1 = _to_float(n1_str)
-                if n1 is not None:
-                    records.append({
-                        "timestamp": timestamp.isoformat(),
-                        "N1_cph": n1,
-                        "source": "finapp",
-                    })
-
-            if records:
-                print(f"   Found {len(records)} records from HTML table")
-                return records
-
-        return []
-    except Exception as e:
-        print(f"   HTML parsing failed: {e}")
-        return []
 
 
 # ---------------------------------------------------------------------------
