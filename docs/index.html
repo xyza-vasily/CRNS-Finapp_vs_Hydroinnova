@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Marchfeld CRNS Dashboard</title>
+    <title>Machfeld CRNS Dashboard</title>
     <style>
-        /* --- RESET & BASE --- */
         * {
             margin: 0;
             padding: 0;
@@ -20,7 +19,6 @@
             margin: 0 auto;
         }
 
-        /* --- TITLE (centered, no glow) --- */
         h1 {
             font-family: Arial, Helvetica, sans-serif;
             font-weight: 700;
@@ -37,7 +35,6 @@
             margin-bottom: 30px;
         }
 
-        /* --- TIMESTAMP BADGE --- */
         .timestamp-badge {
             text-align: center;
             font-size: 0.85rem;
@@ -52,13 +49,12 @@
             text-align: center;
         }
 
-        /* --- CHART WRAPPER --- */
         .chart-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 24px;
             margin-top: 10px;
-            max-width: 900px;
+            max-width: 1000px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -68,10 +64,6 @@
             border-radius: 12px;
             padding: 18px 18px 10px 18px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            transition: box-shadow 0.15s ease;
-        }
-        .chart-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         }
         .chart-card h3 {
             font-family: Arial, Helvetica, sans-serif;
@@ -81,13 +73,15 @@
             margin-bottom: 12px;
             letter-spacing: 0.3px;
         }
+        .chart-card .canvas-wrap {
+            position: relative;
+            height: 600px;
+        }
         .chart-card canvas {
             width: 100% !important;
-            height: auto !important;
-            max-height: 350px;
+            height: 100% !important;
         }
 
-        /* --- DATA TABLE --- */
         .table-wrapper {
             margin-top: 32px;
             background: #ffffff;
@@ -95,7 +89,7 @@
             border-radius: 12px;
             padding: 16px 20px;
             overflow-x: auto;
-            max-width: 900px;
+            max-width: 1000px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -134,11 +128,15 @@
             color: #8b949e;
             font-style: italic;
         }
+        .diff-positive { color: #1a7f37; font-weight: 600; }
+        .diff-negative { color: #cf222e; font-weight: 600; }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 800px) {
             h1 {
                 font-size: 1.5rem;
+            }
+            .chart-card .canvas-wrap {
+                height: 420px;
             }
         }
         @media (max-width: 500px) {
@@ -160,8 +158,8 @@
 </head>
 <body>
 
-    <h1>Marchfeld CRNS Comparison</h1>
-    <div class="subtitle">Hydroinnova vs Finapp &mdash; Neutron Counts from August 20, 2026</div>
+    <h1>Machfeld CRNS Comparison</h1>
+    <div class="subtitle">Hydroinnova vs Finapp - Neutron Counts from August 20, 2026</div>
 
     <div class="timestamp-wrapper">
         <span class="timestamp-badge" id="updateBadge">⏳ Loading data…</span>
@@ -170,7 +168,9 @@
     <div class="chart-grid">
         <div class="chart-card">
             <h3>N1 (fast neutrons)</h3>
-            <canvas id="chartN1"></canvas>
+            <div class="canvas-wrap">
+                <canvas id="chartN1"></canvas>
+            </div>
         </div>
     </div>
 
@@ -185,27 +185,23 @@
     <script>
         (async function () {
             try {
-                const res = await fetch('data.json');
+                const res = await fetch('data.json', { cache: 'no-store' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
-                // Update timestamp badge
                 const updated = new Date(data.updated_at);
                 document.getElementById('updateBadge').textContent =
                     `Last updated: ${updated.toLocaleString()}`;
 
-                // Combine both sources into a single time-series
-                const allRecords = [...data.hydroinnova, ...data.finapp];
+                const allRecords = [...(data.hydroinnova || []), ...(data.finapp || [])];
                 if (!allRecords.length) {
                     document.getElementById('tableContainer').innerHTML =
                         '<p style="color:#8b949e;">No data available yet. Run the workflow to fetch data.</p>';
                     return;
                 }
 
-                // Sort by timestamp
                 allRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-                // Build lookup for merging
                 const timeMap = new Map();
                 allRecords.forEach(r => {
                     const key = r.timestamp;
@@ -230,7 +226,16 @@
                     return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 });
 
-                // --- Chart 1: N1 ---
+                // Scale the y-axis to the actual data range instead of
+                // starting at 0, so the line fills the chart instead of
+                // sitting in a strip near the top.
+                const allValues = merged
+                    .flatMap(d => [d.hydro_N1, d.finapp_N1])
+                    .filter(v => v !== null && v !== undefined);
+                const dataMin = allValues.length ? Math.min(...allValues) : 0;
+                const dataMax = allValues.length ? Math.max(...allValues) : 100;
+                const padding = Math.max((dataMax - dataMin) * 0.1, 10);
+
                 const ctx1 = document.getElementById('chartN1').getContext('2d');
                 new Chart(ctx1, {
                     type: 'line',
@@ -261,7 +266,7 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 labels: {
@@ -284,13 +289,14 @@
                                     font: { family: 'Arial', size: 10 },
                                 },
                                 grid: { color: 'rgba(0,0,0,0.05)' },
-                                beginAtZero: true,
+                                min: Math.max(0, dataMin - padding),
+                                max: dataMax + padding,
                             }
                         }
                     }
                 });
 
-                // --- Table: show latest 10 records (only N1) ---
+                // --- Table: latest 10 records, with a Hydro - Finapp diff column ---
                 const latest = merged.slice(-10).reverse();
                 let html = `
                     <table>
@@ -299,6 +305,7 @@
                                 <th>Timestamp</th>
                                 <th>Hydroinnova N1</th>
                                 <th>Finapp N1</th>
+                                <th>Difference (Hydro − Finapp)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -306,11 +313,20 @@
                 latest.forEach(d => {
                     const dt = new Date(d.timestamp);
                     const ts = dt.toLocaleString();
+                    const hasBoth = d.hydro_N1 !== null && d.finapp_N1 !== null;
+                    const diff = hasBoth ? (d.hydro_N1 - d.finapp_N1) : null;
+                    let diffCell = '<span class="null-value">-</span>';
+                    if (diff !== null) {
+                        const cls = diff >= 0 ? 'diff-positive' : 'diff-negative';
+                        const sign = diff > 0 ? '+' : '';
+                        diffCell = `<span class="${cls}">${sign}${diff.toFixed(1)}</span>`;
+                    }
                     html += `
                         <tr>
                             <td>${ts}</td>
-                            <td>${d.hydro_N1 !== null ? d.hydro_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
-                            <td>${d.finapp_N1 !== null ? d.finapp_N1.toFixed(1) : '<span class="null-value">—</span>'}</td>
+                            <td>${d.hydro_N1 !== null ? d.hydro_N1.toFixed(1) : '<span class="null-value">-</span>'}</td>
+                            <td>${d.finapp_N1 !== null ? d.finapp_N1.toFixed(1) : '<span class="null-value">-</span>'}</td>
+                            <td>${diffCell}</td>
                         </tr>
                     `;
                 });
