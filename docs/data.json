@@ -1,7 +1,167 @@
 {
-  "updated_at": "2026-11-04T15:56:31.792734+00:00",
+  "updated_at": "2026-11-06T15:38:25.866985+00:00",
   "start_date": "2026-08-20T00:00:00+00:00",
   "hydroinnova": [
+    {
+      "timestamp": "2026-11-06T15:06:00+00:00",
+      "N1_cph": 1742.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T14:02:00+00:00",
+      "N1_cph": 1727.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T13:02:00+00:00",
+      "N1_cph": 1693.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T12:06:00+00:00",
+      "N1_cph": 1711.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T11:02:00+00:00",
+      "N1_cph": 1648.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T10:02:00+00:00",
+      "N1_cph": 1693.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T09:02:00+00:00",
+      "N1_cph": 1677.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T08:02:00+00:00",
+      "N1_cph": 1667.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T07:02:00+00:00",
+      "N1_cph": 1670.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T06:02:00+00:00",
+      "N1_cph": 1615.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T05:06:00+00:00",
+      "N1_cph": 1651.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T04:02:00+00:00",
+      "N1_cph": 1677.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T03:02:00+00:00",
+      "N1_cph": 1679.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T02:02:00+00:00",
+      "N1_cph": 1631.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T01:06:00+00:00",
+      "N1_cph": 1637.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-06T00:02:00+00:00",
+      "N1_cph": 1694.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T23:02:00+00:00",
+      "N1_cph": 1648.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T22:02:00+00:00",
+      "N1_cph": 1717.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T21:06:00+00:00",
+      "N1_cph": 1656.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T20:02:00+00:00",
+      "N1_cph": 1652.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T19:02:00+00:00",
+      "N1_cph": 1598.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T18:06:00+00:00",
+      "N1_cph": 1670.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T17:06:00+00:00",
+      "N1_cph": 1630.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T16:02:00+00:00",
+      "N1_cph": 1699.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T15:06:00+00:00",
+      "N1_cph": 1647.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T14:10:00+00:00",
+      "N1_cph": 1661.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T13:02:00+00:00",
+      "N1_cph": 1630.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T12:02:00+00:00",
+      "N1_cph": 1681.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T11:06:00+00:00",
+      "N1_cph": 1607.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T10:02:00+00:00",
+      "N1_cph": 1625.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T09:02:00+00:00",
+      "N1_cph": 1563.0,
+      "source": "hydroinnova"
+    },
+    {
+      "timestamp": "2026-11-05T08:05:00+00:00",
+      "N1_cph": 17.0,
+      "source": "hydroinnova"
+    },
     {
       "timestamp": "2026-11-03T07:39:00+00:00",
       "N1_cph": 1689.0,
